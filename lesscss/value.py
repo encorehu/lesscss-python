@@ -180,7 +180,7 @@ VALUE = re.compile('''
         )
     |
         (?P<number>
-            [0-9]+
+            [0-9\.]+
 
             (?P<unit>
                 %                       # percentage
