@@ -497,6 +497,8 @@ def subtract(arg1, arg2):
         num = num1 - num2
 
         return '%i%s' % (num, unit)
+    elif arg1['type'] == 'string' and arg2['type'] == 'string':
+        return '%s-%s' % (arg1['value'], arg2['value'])
     else:
         raise ValueError('%s cannot be subtracted from %s' %
                          (arg1['type'], arg2['type']))
