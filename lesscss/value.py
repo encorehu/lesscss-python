@@ -95,8 +95,8 @@ COLOURS = {'aliceblue':            '#f0f8ff', 'antiquewhite':         '#faebd7',
            'violet':               '#ee82ee', 'wheat':                '#f5deb3',
            'white':                '#ffffff', 'whitesmoke':           '#f5f5f5',
            'yellow':               '#ffff00', 'yellowgreen':          '#9acd32'}
-           
-           
+
+
 UNITS = ('%', 'in', 'cm', 'mm', 'em', 'ex', 'pt', 'pc', 'px')
 
 
@@ -181,7 +181,7 @@ VALUE = re.compile('''
     |
         (?P<number>
             [0-9]+
-            
+
             (?P<unit>
                 %                       # percentage
             |
@@ -239,107 +239,107 @@ VALUE = re.compile('''
 GROUPS = ('add', 'colour', 'colour_name', 'comma', 'constant', 'divide',
           'format', 'local', 'multiply', 'number', 'short_colour', 'string',
           'subtract', 'url', 'whitespace')
-          
-          
+
+
 def add(arg1, arg2):
     if arg1['type'] == 'colour' and arg2['type'] == 'colour':
         colour1_red, colour1_green, colour1_blue = get_rgb(arg1['value'])
         colour2_red, colour2_green, colour2_blue = get_rgb(arg2['value'])
-        
+
         red   = colour1_red   + colour2_red
         green = colour1_green + colour2_green
         blue  = colour1_blue  + colour2_blue
-        
+
         return get_colour_value(red, green, blue)
     elif arg1['type'] == 'number' and arg2['type'] == 'number':
         num1, unit1 = get_number(arg1['value'])
         num2, unit2 = get_number(arg2['value'])
-        
+
         unit = get_unit(unit1, unit2)
-        
+
         num = num1 + num2
-        
+
         return '%i%s' % (num, unit)
     else:
         raise ValueError('%s cannot be added to %s' %
                          (arg1['type'], arg2['type']))
-          
-          
+
+
 def divide(arg1, arg2):
     if arg1['type'] == 'colour' and arg2['type'] == 'number':
         operand = int(arg2['value'])
-        
+
         if operand == 0:
             raise ZeroDivisionError()
-    
+
         colour1_red, colour1_green, colour1_blue = get_rgb(arg1['value'])
-        
+
         red   = colour1_red   / operand
         green = colour1_green / operand
         blue  = colour1_blue  / operand
-        
+
         return get_colour_value(red, green, blue)
     elif arg1['type'] == 'number' and arg2['type'] == 'number':
         num1, unit1 = get_number(arg1['value'])
         num2, unit2 = get_number(arg2['value'])
-        
+
         unit = get_unit(unit1, unit2)
-        
+
         num = int(num1 / num2)
-        
+
         return '%i%s' % (num, unit)
     else:
         raise ValueError('%s cannot be divided by %s' %
                          (arg1['type'], arg2['type']))
 
-                         
+
 def get_colour(value):
     value = value.lower()
 
     for colour in COLOURS:
         if value == COLOURS[colour]:
             return colour
-            
+
     if value[1:4] == value[4:7]:
         return value[0:4]
-    
+
     return value
-    
-    
+
+
 def get_colour_value(red, green, blue):
     hex_red   = hex(normalise_colour(red))
     hex_green = hex(normalise_colour(green))
     hex_blue  = hex(normalise_colour(blue))
-    
+
     return '#%s%s%s' % (hex_red[2:], hex_green[2:], hex_blue[2:])
 
-    
+
 def get_matched_value(match):
     for group_name in GROUPS:
         grouped = match.group(group_name)
-        
+
         if grouped:
             return group_name, grouped
     else:
         raise AssertionError('Unable to find matched group')
-        
-        
+
+
 def get_number(number):
     for unit in UNITS:
         if number.endswith(unit):
             return int(number[:-len(unit)]), unit
     else:
         return int(number), None
-        
-        
+
+
 def get_rgb(colour):
     red   = int(colour[1:3], 16)
     green = int(colour[3:5], 16)
     blue  = int(colour[5:7], 16)
-    
+
     return red, green, blue
-    
-    
+
+
 def get_unit(unit1, unit2):
     if unit1 and unit2 and unit1 != unit2:
         raise ValueError('%s cannot be mixed with a %s' % unit1, unit2)
@@ -353,23 +353,23 @@ def get_unit(unit1, unit2):
 
 def get_value(less, constants):
     parsed = parse_value(less, constants)
-    
+
     value = ''
-    
+
     i = 0
-    
+
     length = len(parsed)
-    
+
     while i != length:
         item = parsed[i]
-    
+
         if value and item['type'] != 'comma':
             value += ' '
-        
+
         if i != length - 1 \
         and parsed[i + 1]['type'] in ('add', 'divide', 'multiply', 'subtract'):
             operator = parsed[i + 1]['type']
-            
+
             if operator == 'add':
                 this_value = add(parsed[i], parsed[i + 2])
             elif operator == 'divide':
@@ -378,53 +378,53 @@ def get_value(less, constants):
                 this_value = multiply(parsed[i], parsed[i + 2])
             elif operator == 'subtract':
                 this_value = subtract(parsed[i], parsed[i + 2])
-                
+
             parsed[i]['value'] = this_value
-            
+
             for _ in range(2):
                 parsed.pop(i + 1)
-        
+
             length -= 2
-            
+
             continue
         else:
             this_value = item['value']
-            
+
         if item['type'] == 'colour':
             this_value = get_colour(this_value)
-            
+
         value += this_value
-        
+
         i += 1
-    
+
     return value
-          
-          
+
+
 def multiply(arg1, arg2):
     if arg1['type'] == 'colour' and arg2['type'] == 'number':
         operand = int(arg2['value'])
-    
+
         colour1_red, colour1_green, colour1_blue = get_rgb(arg1['value'])
-        
+
         red   = colour1_red   * operand
         green = colour1_green * operand
         blue  = colour1_blue  * operand
-        
+
         return get_colour_value(red, green, blue)
     elif arg1['type'] == 'number' and arg2['type'] == 'number':
         num1, unit1 = get_number(arg1['value'])
         num2, unit2 = get_number(arg2['value'])
-        
+
         unit = get_unit(unit1, unit2)
-        
+
         num = num1 * num2
-        
+
         return '%i%s' % (num, unit)
     else:
         raise ValueError('%s cannot be multiplied by %s' %
                          (arg1['type'], arg2['type']))
-        
-        
+
+
 def normalise_colour(colour):
     if colour < 0:
         return 0
@@ -432,35 +432,35 @@ def normalise_colour(colour):
         return 255
     else:
         return colour
-    
-    
+
+
 def parse_value(less, constants):
     parsed = list()
 
     while less:
         match = VALUE.match(less)
-        
+
         if not match:
             raise ValueError(less)
-        
+
         group_name, grouped = get_matched_value(match)
-        
+
         length = len(grouped)
-        
+
         less = less[length:]
-        
+
         if group_name == 'constant':
             constant = constants[grouped]
-            
+
             value = ''
-            
+
             while value != grouped:
                 grouped = value
-                
+
                 value = get_value(constant, constants)
-                
+
             group_name, value = get_matched_value(VALUE.match(grouped))
-        
+
         if group_name == 'colour_name':
             group_name = 'colour'
             value = COLOURS[grouped.lower()]
@@ -472,30 +472,30 @@ def parse_value(less, constants):
             continue
         else:
             value = grouped
-            
+
         parsed.append({'type': group_name, 'value': value})
 
     return parsed
-          
-          
+
+
 def subtract(arg1, arg2):
     if arg1['type'] == 'colour' and arg2['type'] == 'colour':
         colour1_red, colour1_green, colour1_blue = get_rgb(arg1['value'])
         colour2_red, colour2_green, colour2_blue = get_rgb(arg2['value'])
-        
+
         red   = colour1_red   - colour2_red
         green = colour1_green - colour2_green
         blue  = colour1_blue  - colour2_blue
-        
+
         return get_colour_value(red, green, blue)
     elif arg1['type'] == 'number' and arg2['type'] == 'number':
         num1, unit1 = get_number(arg1['value'])
         num2, unit2 = get_number(arg2['value'])
-        
+
         unit = get_unit(unit1, unit2)
-        
+
         num = num1 - num2
-        
+
         return '%i%s' % (num, unit)
     else:
         raise ValueError('%s cannot be subtracted from %s' %
